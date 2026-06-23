@@ -1,0 +1,1219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>PR Review · BlogPlatform.Api · develop → main</title>
+<style>
+:root{
+  --page:#edf2f7;
+  --page-top:#e4ebf5;
+  --surface:#f8fafc;
+  --surface-raised:#ffffff;
+  --surface-muted:#eef3f8;
+  --surface-warm:#f4f7fb;
+
+  --ink:#172033;
+  --ink-soft:#26344d;
+  --muted:#66758b;
+
+  --line:#d6dde8;
+  --line-soft:#e4eaf2;
+
+  --brand:#4f63d9;
+  --brand-dark:#3649b8;
+  --brand-soft:#e8ebff;
+
+  --critical:#bd3030;
+  --critical-soft:#fff0f0;
+
+  --high:#b15d05;
+  --high-soft:#fff3e4;
+
+  --medium:#8a6b00;
+  --medium-soft:#fff7d6;
+
+  --good:#16704a;
+  --good-soft:#e8f8ef;
+
+  --code:#1e293b;
+
+  --shadow:0 12px 32px rgba(15,23,42,.07),0 2px 6px rgba(15,23,42,.04);
+  --shadow-soft:0 5px 14px rgba(15,23,42,.05),0 1px 3px rgba(15,23,42,.04);
+}
+
+*{box-sizing:border-box}
+
+html{scroll-behavior:smooth}
+
+body{
+  margin:0;
+  background:
+    radial-gradient(circle at top left,rgba(79,99,217,.12),transparent 360px),
+    linear-gradient(180deg,var(--page-top) 0,var(--page) 300px);
+  color:var(--ink);
+  font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+  line-height:1.58;
+  -webkit-font-smoothing:antialiased;
+}
+
+button{font:inherit}
+
+.topbar{
+  position:sticky;
+  top:0;
+  z-index:20;
+  background:rgba(244,247,251,.9);
+  backdrop-filter:blur(18px);
+  border-bottom:1px solid rgba(214,221,232,.9);
+}
+
+.topbar-inner{
+  max-width:1260px;
+  margin:0 auto;
+  padding:12px 24px;
+  display:flex;
+  align-items:center;
+  gap:16px;
+}
+
+.product-title{
+  font-weight:800;
+  font-size:14px;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  flex:1;
+}
+
+.product-title small{
+  color:var(--muted);
+  font-weight:600;
+  margin-left:6px;
+}
+
+.verdict-pill{
+  display:inline-flex;
+  align-items:center;
+  gap:7px;
+  border-radius:999px;
+  padding:5px 12px;
+  font-size:12px;
+  font-weight:900;
+  letter-spacing:.04em;
+  background:var(--good-soft);
+  color:var(--good);
+  border:1px solid #b6e0c8;
+}
+
+.verdict-pill.fail{
+  background:var(--critical-soft);
+  color:var(--critical);
+  border-color:#f4cccc;
+}
+
+.generated{
+  font-size:12px;
+  color:var(--muted);
+}
+
+.quick-badges{
+  display:flex;
+  gap:8px;
+  align-items:center;
+}
+
+.pill{
+  display:inline-flex;
+  align-items:center;
+  gap:7px;
+  border-radius:999px;
+  padding:5px 10px;
+  font-size:12px;
+  font-weight:800;
+  border:1px solid transparent;
+}
+
+.pill i{
+  width:8px;
+  height:8px;
+  border-radius:50%;
+  display:block;
+}
+
+.pill-critical{background:var(--critical-soft);color:var(--critical);border-color:#f4cccc;}
+.pill-critical i{background:var(--critical)}
+.pill-high{background:var(--high-soft);color:var(--high);border-color:#f4c892;}
+.pill-high i{background:var(--high)}
+.pill-medium{background:var(--medium-soft);color:var(--medium);border-color:#ecd77f;}
+.pill-medium i{background:var(--medium)}
+
+.layout{
+  max-width:1260px;
+  margin:0 auto;
+  padding:30px 24px 52px;
+  display:grid;
+  grid-template-columns:286px minmax(0,1fr);
+  gap:24px;
+}
+
+.sidebar{
+  position:sticky;
+  top:68px;
+  align-self:start;
+}
+
+.panel{
+  background:rgba(248,250,252,.92);
+  border:1px solid var(--line);
+  border-radius:22px;
+  box-shadow:var(--shadow-soft);
+}
+
+.side-panel{padding:18px;}
+
+.side-title{
+  font-size:12px;
+  text-transform:uppercase;
+  letter-spacing:.12em;
+  color:var(--muted);
+  font-weight:900;
+  margin:0 0 12px;
+}
+
+.nav-list{
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+}
+
+.nav-list a{
+  color:var(--ink);
+  text-decoration:none;
+  font-size:14px;
+  font-weight:700;
+  padding:10px 11px;
+  border-radius:13px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  transition:background .15s ease,color .15s ease;
+}
+
+.nav-list a:hover{background:var(--brand-soft);color:var(--brand-dark);}
+.nav-list a.active{background:var(--brand-soft);color:var(--brand-dark);}
+
+.count-mini{
+  color:var(--muted);
+  font-size:12px;
+}
+
+.nav-list a.active .count-mini{color:var(--brand-dark);}
+
+.helper{
+  margin-top:16px;
+  border-top:1px solid var(--line-soft);
+  padding-top:14px;
+  font-size:12px;
+  color:var(--muted);
+}
+
+kbd{
+  font-size:11px;
+  border:1px solid var(--line);
+  border-bottom-width:2px;
+  border-radius:6px;
+  padding:1px 5px;
+  background:#fff;
+  color:var(--ink);
+}
+
+.hero{
+  padding:30px;
+  margin-bottom:22px;
+  background:
+    radial-gradient(circle at top right,rgba(79,99,217,.14),transparent 340px),
+    var(--surface);
+  border:1px solid var(--line);
+  border-radius:26px;
+  box-shadow:var(--shadow);
+}
+
+.eyebrow{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  background:var(--brand-soft);
+  color:var(--brand-dark);
+  border:1px solid #d7ddff;
+  border-radius:999px;
+  padding:6px 12px;
+  font-size:12px;
+  font-weight:900;
+  margin-bottom:14px;
+}
+
+.hero h1{
+  font-size:31px;
+  line-height:1.15;
+  margin:0 0 9px;
+  letter-spacing:-.035em;
+}
+
+.hero p{
+  margin:0;
+  color:var(--muted);
+  max-width:820px;
+}
+
+.progress{
+  margin-top:22px;
+  background:var(--surface-raised);
+  border:1px solid var(--line);
+  border-radius:18px;
+  padding:14px 16px;
+  display:grid;
+  grid-template-columns:auto 1fr auto;
+  gap:14px;
+  align-items:center;
+}
+
+.progress-label{
+  font-size:12px;
+  text-transform:uppercase;
+  letter-spacing:.1em;
+  font-weight:900;
+  color:var(--muted);
+}
+
+.progress-track{
+  height:10px;
+  background:var(--surface-muted);
+  border-radius:999px;
+  overflow:hidden;
+  border:1px solid var(--line-soft);
+}
+
+.progress-fill{
+  height:100%;
+  background:linear-gradient(90deg,var(--brand) 0%,var(--good) 100%);
+  width:0%;
+  transition:width .3s ease;
+}
+
+.progress-count{
+  font-size:13px;
+  font-weight:850;
+  color:var(--ink-soft);
+  font-variant-numeric:tabular-nums;
+}
+
+.hero-actions{
+  display:flex;
+  flex-wrap:wrap;
+  gap:10px;
+  margin-top:20px;
+}
+
+.action-btn{
+  border:1px solid var(--line);
+  background:var(--surface-raised);
+  border-radius:13px;
+  padding:10px 14px;
+  color:var(--ink);
+  font-size:13px;
+  font-weight:800;
+  cursor:pointer;
+  transition:transform .12s ease,box-shadow .12s ease;
+}
+
+.action-btn.primary{
+  background:var(--brand);
+  border-color:var(--brand);
+  color:white;
+}
+
+.action-btn:hover{
+  transform:translateY(-1px);
+  box-shadow:var(--shadow-soft);
+}
+
+.action-board{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:14px;
+  margin-bottom:22px;
+}
+
+.action-card{
+  background:var(--surface-raised);
+  border:1px solid var(--line);
+  border-radius:20px;
+  box-shadow:var(--shadow-soft);
+  padding:18px;
+}
+
+.action-card h2{
+  margin:0 0 6px;
+  font-size:17px;
+  letter-spacing:-.01em;
+}
+
+.action-card p{
+  margin:0 0 14px;
+  color:var(--muted);
+  font-size:13px;
+}
+
+.check-list{
+  display:grid;
+  gap:10px;
+}
+
+.check-item{
+  display:grid;
+  grid-template-columns:auto 1fr auto;
+  align-items:center;
+  gap:10px;
+  background:var(--surface-warm);
+  border:1px solid var(--line-soft);
+  border-radius:14px;
+  padding:11px 12px;
+  font-size:14px;
+  font-weight:700;
+  cursor:pointer;
+  transition:background .15s ease,border-color .15s ease;
+}
+
+.check-item:hover{
+  border-color:#c7d1e0;
+}
+
+.check-item.done{
+  background:var(--good-soft);
+  border-color:#bce0cb;
+}
+
+.check-item.done .check-label{
+  color:var(--muted);
+  text-decoration:line-through;
+}
+
+.check-box{
+  width:18px;
+  height:18px;
+  border-radius:6px;
+  border:2px solid var(--line);
+  background:#fff;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  flex-shrink:0;
+  transition:background .15s ease,border-color .15s ease;
+}
+
+.check-item.done .check-box{
+  background:var(--good);
+  border-color:var(--good);
+}
+
+.check-box svg{
+  width:12px;
+  height:12px;
+  stroke:#fff;
+  stroke-width:3;
+  fill:none;
+  stroke-linecap:round;
+  stroke-linejoin:round;
+  opacity:0;
+  transition:opacity .15s ease;
+}
+
+.check-item.done .check-box svg{opacity:1;}
+
+.check-tag{
+  font-size:10px;
+  text-transform:uppercase;
+  letter-spacing:.08em;
+  font-weight:900;
+  border-radius:999px;
+  padding:3px 7px;
+}
+
+.check-tag.high{background:var(--high-soft);color:var(--high);}
+.check-tag.medium{background:var(--medium-soft);color:var(--medium);}
+.check-tag.low{background:var(--brand-soft);color:var(--brand-dark);}
+
+.score-grid{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:14px;
+  margin-bottom:24px;
+}
+
+.score-card{
+  background:rgba(248,250,252,.94);
+  border:1px solid var(--line);
+  border-radius:19px;
+  padding:18px;
+  box-shadow:var(--shadow-soft);
+  position:relative;
+  overflow:hidden;
+}
+
+.score-card::after{
+  content:"";
+  position:absolute;
+  right:-26px;
+  top:-26px;
+  width:94px;
+  height:94px;
+  border-radius:999px;
+  opacity:.08;
+}
+
+.score-card strong{
+  font-size:34px;
+  line-height:1;
+  display:block;
+  margin-bottom:7px;
+}
+
+.score-card span{
+  font-size:12px;
+  text-transform:uppercase;
+  letter-spacing:.12em;
+  font-weight:900;
+  color:var(--muted);
+}
+
+.score-card p{
+  margin:6px 0 0;
+  color:var(--muted);
+  font-size:13px;
+}
+
+.score-card.high strong{color:var(--high)}
+.score-card.high::after{background:var(--high)}
+.score-card.medium strong{color:var(--medium)}
+.score-card.medium::after{background:var(--medium)}
+.score-card.critical strong{color:var(--critical)}
+.score-card.critical::after{background:var(--critical)}
+.score-card.good strong{color:var(--good)}
+.score-card.good::after{background:var(--good)}
+
+.section{margin:26px 0;}
+
+.section-head{
+  display:flex;
+  align-items:end;
+  justify-content:space-between;
+  gap:16px;
+  margin-bottom:13px;
+}
+
+.section-title{
+  margin:0;
+  font-size:19px;
+  letter-spacing:-.015em;
+}
+
+.section-subtitle{
+  margin:2px 0 0;
+  color:var(--muted);
+  font-size:13px;
+}
+
+.empty-card{
+  background:var(--surface);
+  border:1px dashed var(--line);
+  border-radius:18px;
+  padding:18px;
+  font-size:14px;
+  color:var(--muted);
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+
+.empty-card strong{color:var(--good);}
+
+.issue-stack{
+  display:flex;
+  flex-direction:column;
+  gap:15px;
+}
+
+.issue-card{
+  background:var(--surface);
+  border:1px solid var(--line);
+  border-radius:22px;
+  overflow:hidden;
+  box-shadow:var(--shadow-soft);
+}
+
+.issue-card.high{border-left:6px solid var(--high);}
+.issue-card.medium{border-left:6px solid var(--medium);}
+
+.issue-top{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto auto;
+  gap:16px;
+  padding:17px 19px;
+  background:var(--surface-muted);
+  border-bottom:1px solid var(--line-soft);
+  align-items:center;
+}
+
+.file-path{
+  font-family:"Cascadia Code",Consolas,monospace;
+  color:#3150b5;
+  font-size:12px;
+  font-weight:800;
+  word-break:break-all;
+}
+
+.line{
+  font-size:12px;
+  color:var(--muted);
+  margin-top:4px;
+}
+
+.severity{
+  font-size:11px;
+  font-weight:900;
+  text-transform:uppercase;
+  letter-spacing:.08em;
+  border-radius:999px;
+  padding:5px 9px;
+  align-self:start;
+}
+
+.severity.high{background:var(--high-soft);color:var(--high);border:1px solid #f4c892;}
+.severity.medium{background:var(--medium-soft);color:var(--medium);border:1px solid #ecd77f;}
+
+.anchor-btn{
+  border:1px solid var(--line);
+  background:var(--surface-raised);
+  color:var(--muted);
+  border-radius:10px;
+  width:30px;
+  height:30px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  cursor:pointer;
+  font-size:13px;
+}
+
+.anchor-btn:hover{color:var(--brand-dark);border-color:var(--brand);}
+.anchor-btn.copied{background:var(--good);border-color:var(--good);color:#fff;}
+
+.issue-body{
+  padding:19px;
+  display:grid;
+  gap:15px;
+}
+
+.two-col{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:14px;
+}
+
+.block{
+  background:var(--surface-raised);
+  border-radius:16px;
+  padding:15px;
+}
+
+.block-title{
+  margin:0 0 6px;
+  font-size:11px;
+  text-transform:uppercase;
+  letter-spacing:.12em;
+  font-weight:950;
+  color:var(--muted);
+}
+
+.block.problem .block-title{color:var(--high);}
+.block.fix .block-title{color:var(--brand-dark);}
+
+.block p{margin:0;font-size:14px;}
+.block ul{margin:6px 0 0;padding-left:18px;font-size:14px;}
+.block ul li{margin-bottom:3px;}
+
+code{
+  font-family:"Cascadia Code",Consolas,monospace;
+  background:#e9eef6;
+  border:1px solid #d9e1ed;
+  border-radius:6px;
+  padding:1px 5px;
+  color:#3150b5;
+  font-size:.92em;
+}
+
+.code-sample{
+  margin:0;
+  background:var(--code);
+  border-radius:15px;
+  padding:14px 16px;
+  overflow:auto;
+  border:1px solid #2c3a50;
+  color:#e5e7eb;
+  font-size:13px;
+  position:relative;
+}
+
+.code-sample code{
+  background:transparent;
+  border:0;
+  color:inherit;
+  padding:0;
+}
+
+.code-copy{
+  position:absolute;
+  top:8px;
+  right:8px;
+  background:rgba(255,255,255,.08);
+  border:1px solid rgba(255,255,255,.18);
+  color:#cbd5e1;
+  border-radius:8px;
+  padding:4px 8px;
+  font-size:11px;
+  cursor:pointer;
+  font-weight:700;
+}
+
+.code-copy:hover{background:rgba(255,255,255,.16);color:#fff;}
+.code-copy.copied{background:var(--good);border-color:var(--good);color:#fff;}
+
+.comment-box{
+  border:1px solid #cbd4ff;
+  background:#f4f6ff;
+  border-radius:17px;
+  overflow:hidden;
+}
+
+.comment-head{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:12px;
+  padding:11px 14px;
+  background:#e8ebff;
+  border-bottom:1px solid #d7ddff;
+}
+
+.comment-head span{
+  font-size:11px;
+  text-transform:uppercase;
+  letter-spacing:.12em;
+  font-weight:950;
+  color:var(--brand-dark);
+}
+
+.copy-btn{
+  border:0;
+  background:var(--brand);
+  color:#fff;
+  border-radius:10px;
+  padding:7px 12px;
+  cursor:pointer;
+  font-size:12px;
+  font-weight:850;
+}
+
+.copy-btn.copied{background:var(--good);}
+
+.comment-text{
+  padding:14px 15px;
+  margin:0;
+  font-size:14px;
+  line-height:1.68;
+}
+
+.good-list,.refs-list{
+  margin:0;
+  padding:0;
+  list-style:none;
+  display:grid;
+  gap:10px;
+}
+
+.good-list li,.refs-list li{
+  background:var(--surface);
+  border:1px solid var(--line);
+  border-radius:16px;
+  padding:13px 15px;
+  font-size:14px;
+  box-shadow:var(--shadow-soft);
+}
+
+.good-list li{border-left:5px solid var(--good);}
+
+.ref-type{
+  font-size:10px;
+  text-transform:uppercase;
+  letter-spacing:.09em;
+  font-weight:950;
+  border-radius:999px;
+  padding:3px 7px;
+  margin-right:8px;
+  background:var(--brand-soft);
+  color:var(--brand-dark);
+}
+
+.footer{
+  padding:28px;
+  text-align:center;
+  color:var(--muted);
+  font-size:12px;
+}
+
+.toast{
+  position:fixed;
+  bottom:24px;
+  left:50%;
+  transform:translateX(-50%) translateY(20px);
+  background:var(--ink);
+  color:#fff;
+  padding:10px 16px;
+  border-radius:12px;
+  font-size:13px;
+  font-weight:700;
+  box-shadow:0 10px 30px rgba(0,0,0,.25);
+  opacity:0;
+  pointer-events:none;
+  transition:opacity .2s ease,transform .2s ease;
+  z-index:50;
+}
+
+.toast.show{
+  opacity:1;
+  transform:translateX(-50%) translateY(0);
+}
+
+@media(max-width:1000px){
+  .layout{grid-template-columns:1fr}
+  .sidebar{position:static}
+  .score-grid{grid-template-columns:repeat(2,1fr)}
+  .two-col{grid-template-columns:1fr}
+  .action-board{grid-template-columns:1fr}
+  .generated{display:none}
+}
+
+@media(max-width:640px){
+  .topbar-inner{padding:10px 14px}
+  .quick-badges{display:none}
+  .layout{padding:20px 14px}
+  .hero{padding:22px}
+  .hero h1{font-size:24px}
+  .progress{grid-template-columns:1fr;text-align:left;}
+  .score-grid{grid-template-columns:1fr}
+  .issue-top{grid-template-columns:1fr;align-items:start;}
+}
+
+@media print{
+  body{background:#fff;}
+  .topbar,.sidebar,.hero-actions,.action-btn,.copy-btn,.anchor-btn,.code-copy,.toast{display:none !important;}
+  .layout{grid-template-columns:1fr;padding:0;max-width:none;}
+  .panel,.hero,.action-card,.issue-card,.score-card,.good-list li,.refs-list li{
+    box-shadow:none;
+    border:1px solid #ccc;
+    page-break-inside:avoid;
+  }
+  .code-sample{background:#f5f5f5;color:#1e293b;border:1px solid #ccc;}
+}
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="topbar-inner">
+    <div class="product-title">PR Review · BlogPlatform.Api <small>develop → main · 5 commits</small></div>
+    <span class="verdict-pill">PASS</span>
+    <div class="generated">Generated 2026-06-23</div>
+    <div class="quick-badges">
+      <span class="pill pill-critical"><i></i>0 Critical</span>
+      <span class="pill pill-high"><i></i>0 High</span>
+      <span class="pill pill-medium"><i></i>2 Medium</span>
+    </div>
+  </div>
+</header>
+
+<div class="layout">
+  <aside class="sidebar">
+    <div class="panel side-panel">
+      <p class="side-title">Review map</p>
+      <nav class="nav-list" id="nav-list">
+        <a href="#summary" data-section="summary">Summary <span class="count-mini">—</span></a>
+        <a href="#actions" data-section="actions">Action board <span class="count-mini">3</span></a>
+        <a href="#medium" data-section="medium">Medium priority <span class="count-mini">2</span></a>
+        <a href="#good" data-section="good">Good practices <span class="count-mini">7</span></a>
+        <a href="#followups" data-section="followups">Follow-ups <span class="count-mini">3</span></a>
+        <a href="#refs" data-section="refs">References <span class="count-mini">3</span></a>
+      </nav>
+      <div class="helper">
+        Checkboxes persist locally. <kbd>E</kbd> expand all · <kbd>C</kbd> collapse all · <kbd>P</kbd> print.
+      </div>
+    </div>
+  </aside>
+
+  <main>
+    <section class="hero" id="summary">
+      <div class="eyebrow">pr-reviewer subagent · BlogPlatform.Api conventions</div>
+      <h1>Verdict: PASS — 2 advisory items, no merge blockers</h1>
+      <p>Architecture, CQRS-lite split, notification + ThrowIfInvalid pattern, EF-generated Id, EntityConfiguration&lt;T&gt; base, thin controllers, mappers, and GWT tests all match CLAUDE.md. The two medium items are stylistic — controller line counts slightly exceed the 4-7 guideline because of the <code>CreatedAtRoute</code> success delegate, and three commit subjects exceed 72 chars once GitHub appends <code>(#N)</code>.</p>
+
+      <div class="progress">
+        <span class="progress-label">Action progress</span>
+        <div class="progress-track"><div class="progress-fill" id="progress-fill"></div></div>
+        <span class="progress-count" id="progress-count">0 / 0 done</span>
+      </div>
+
+      <div class="hero-actions">
+        <button class="action-btn primary" onclick="copyAllComments()">Copy all review comments</button>
+        <button class="action-btn" onclick="toggleAll(true)">Expand all</button>
+        <button class="action-btn" onclick="toggleAll(false)">Collapse all</button>
+        <button class="action-btn" onclick="window.print()">Print / save PDF</button>
+        <button class="action-btn" onclick="resetChecks()">Reset checkboxes</button>
+      </div>
+    </section>
+
+    <section class="action-board" id="actions">
+      <div class="action-card">
+        <h2>Address before next PR</h2>
+        <p>Optional cleanups based on the medium items. None block this merge.</p>
+        <div class="check-list" data-checklist="pre-merge">
+          <div class="check-item" data-key="line-count">
+            <span class="check-box"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></span>
+            <span class="check-label">Tighten <code>PostsController.Create</code> / <code>AddComment</code> to 4-7 lines, or relax the rule in CLAUDE.md</span>
+            <span class="check-tag medium">Medium</span>
+          </div>
+          <div class="check-item" data-key="commit-length">
+            <span class="check-box"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></span>
+            <span class="check-label">Use ≤ 64 char commit subjects so GitHub's <code>(#N)</code> stays under 72</span>
+            <span class="check-tag medium">Medium</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="action-card">
+        <h2>Review posture</h2>
+        <p>Optional structural follow-up that came up while reviewing the dependency rules.</p>
+        <div class="check-list" data-checklist="posture">
+          <div class="check-item" data-key="netarchtest">
+            <span class="check-box"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></span>
+            <span class="check-label">Add a <code>NetArchTest</code> to enforce Domain has no Infrastructure / EF Core dependencies</span>
+            <span class="check-tag low">Suggestion</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="score-grid">
+      <div class="score-card critical"><strong>0</strong><span>Critical</span><p>No blocking issue found.</p></div>
+      <div class="score-card high"><strong>0</strong><span>High</span><p>Nothing requires immediate fix.</p></div>
+      <div class="score-card medium"><strong>2</strong><span>Medium</span><p>Stylistic — advisory only.</p></div>
+      <div class="score-card good"><strong>7+</strong><span>Good</span><p>Patterns to keep.</p></div>
+    </section>
+
+    <section class="section" id="medium">
+      <div class="section-head">
+        <div>
+          <h2 class="section-title">Medium priority</h2>
+          <p class="section-subtitle">Worth fixing or confirming, but not blockers.</p>
+        </div>
+      </div>
+
+      <div class="issue-stack">
+        <article class="issue-card medium" id="issue-controller-lines">
+          <div class="issue-top">
+            <div>
+              <div class="file-path">src/BlogPlatform.Presentation/Controllers/PostsController.cs</div>
+              <div class="line">Lines 80-88 (<code>Create</code>, 9 lines) · 115-124 (<code>AddComment</code>, 10 lines)</div>
+            </div>
+            <span class="severity medium">Medium</span>
+            <button class="anchor-btn" title="Copy link to issue" onclick="copyAnchor(this,'issue-controller-lines')">#</button>
+          </div>
+
+          <div class="issue-body">
+            <div class="two-col">
+              <div class="block problem">
+                <p class="block-title">Issue</p>
+                <p>Two controller actions exceed CLAUDE.md's "4-7 lines per controller action" guideline. The extra lines come from the multi-line <code>CreatedAtRoute</code> success delegate, not from business logic.</p>
+              </div>
+              <div class="block fix">
+                <p class="block-title">Suggested fixes (pick one)</p>
+                <ul>
+                  <li>Inline the <code>CreatedAtRoute</code> delegate as a single expression.</li>
+                  <li>Extract a small <code>HandleCreated</code> helper on <code>ApiControllerBase</code>.</li>
+                  <li>Relax CLAUDE.md to "4-7 lines, excluding the success-handler delegate" so docs match reality.</li>
+                </ul>
+              </div>
+            </div>
+
+            <div class="block">
+              <p class="block-title">Why it matters</p>
+              <p>Not a real risk — both methods are still thin and delegate to use cases. This is a doc/code consistency item: either the rule moves or the methods do, so future PRs aren't second-guessed.</p>
+            </div>
+
+            <pre class="code-sample"><button class="code-copy" onclick="copyCode(this)">Copy</button><code>// Current — 9 lines:
+public async Task&lt;IActionResult&gt; Create(
+    CreatePostRequest request,
+    [FromServices] CreatePostUseCase useCase,
+    CancellationToken cancellationToken)
+{
+    var result = await useCase.Handle(request, cancellationToken);
+    return HandleResult(result, post =&gt; CreatedAtRoute(
+        GetPostByIdRoute,
+        new { id = post.Id },
+        post));
+}</code></pre>
+
+            <div class="comment-box">
+              <div class="comment-head">
+                <span>Recommended PR comment</span>
+                <button class="copy-btn" onclick="copyComment(this)">Copy</button>
+              </div>
+              <p class="comment-text">MEDIUM: PostsController.Create (9 lines) and AddComment (10 lines) exceed the 4-7 line guideline in CLAUDE.md. The extra lines are the CreatedAtRoute success delegate, not logic. Either inline the delegate, extract a HandleCreated helper on ApiControllerBase, or relax the rule to "4-7 lines, excluding the success delegate" so the doc matches the code.</p>
+              </div>
+          </div>
+        </article>
+
+        <article class="issue-card medium" id="issue-commit-length">
+          <div class="issue-top">
+            <div>
+              <div class="file-path">Git history · commits #2, #3, #5</div>
+              <div class="line">Conventional Commits convention recommends ≤ 72 char subjects</div>
+            </div>
+            <span class="severity medium">Medium</span>
+            <button class="anchor-btn" title="Copy link to issue" onclick="copyAnchor(this,'issue-commit-length')">#</button>
+          </div>
+
+          <div class="issue-body">
+            <div class="two-col">
+              <div class="block problem">
+                <p class="block-title">Issue</p>
+                <p>Three commit subjects exceed 72 chars once GitHub's squash-merge appends the <code>(#N)</code> PR-number suffix.</p>
+              </div>
+              <div class="block fix">
+                <p class="block-title">Suggested fix</p>
+                <p>Target ~64 chars on the original subject going forward so the merged commit stays ≤ 72. Optionally add <code>commitlint</code> + a CI check.</p>
+              </div>
+            </div>
+
+            <pre class="code-sample"><button class="code-copy" onclick="copyCode(this)">Copy</button><code>feat(posts): add BlogPost endpoints with CQRS-lite, notification pattern and Postman tests (#2)    // 95 chars
+feat(comments): add POST /api/posts/{id}/comments and harden entity/repository design (#3)        // 90 chars
+docs: add Docker, Serilog, polished README, AI workspace refresh + pr-reviewer subagent (#5)      // 92 chars</code></pre>
+
+            <div class="comment-box">
+              <div class="comment-head">
+                <span>Recommended PR comment</span>
+                <button class="copy-btn" onclick="copyComment(this)">Copy</button>
+              </div>
+              <p class="comment-text">MEDIUM: Three commit subjects exceed 72 chars once GitHub appends the (#N) PR-number suffix on squash-merge. Target ~64 chars on the original so the merged commit stays under the Conventional Commits 72-char recommendation. Consider adding a commitlint hook to CI.</p>
+            </div>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section class="section" id="good">
+      <div class="section-head">
+        <div>
+          <h2 class="section-title">Good practices noticed</h2>
+          <p class="section-subtitle">Patterns that match CLAUDE.md — keep doing these.</p>
+        </div>
+      </div>
+
+      <ul class="good-list">
+        <li><strong>Dependency direction holds.</strong> No <code>using BlogPlatform.Infrastructure</code> in Domain or Application; no <code>using Microsoft.EntityFrameworkCore</code> in Domain; no <code>using BlogPlatform.Application</code> in Domain. Verified by grep.</li>
+        <li><strong>Validators live next to their entities.</strong> <code>BlogPostValidator</code> sits in <code>BlogPost.cs</code>; <code>CommentValidator</code> in <code>Comment.cs</code>.</li>
+        <li><strong>Notification pattern is correct.</strong> <code>Entity.Id</code> has no default value; <code>EntityConfiguration&lt;T&gt;</code> applies <code>ValueGeneratedOnAdd()</code> so EF Core's <code>GuidValueGenerator</code> runs at insert. New entities have <code>Id = Guid.Empty</code> until SaveChanges — exactly what the change tracker needs to mark them Added.</li>
+        <li><strong>CQRS-lite split is real.</strong> <code>IBlogPostRepository.GetByIdAsync</code> is the single full-aggregate loader (<code>Include(Comments).AsSplitQuery()</code>); <code>IBlogPostQueries.ListAsync</code> projects directly to <code>PostListItemDto</code>. Two separate Infrastructure classes — exactly as documented.</li>
+        <li><strong>Use cases follow the prescribed pattern uniformly.</strong> Primary ctor for DI; <code>*BuilderMap.From(...)</code> builds entities; <code>await entity.ThrowIfInvalidAsync(validator, ct)</code> for validation; <code>Result.Failure(Error.NotFound(...))</code> for expected outcomes. Zero <code>catch</code> blocks under <code>src/</code>.</li>
+        <li><strong>Tests follow the playbook.</strong> File paths mirror source; <code>&lt;ClassUnderTest&gt;Tests</code> naming; <code>Method_State_ExpectedBehavior</code>; <code>// Given</code> / <code>// When</code> / <code>// Then</code>; mocks only for interfaces from <code>Domain/Repositories</code>, <code>Application/Common/Queries</code>, and <code>FluentValidation.IValidator&lt;T&gt;</code>.</li>
+        <li><strong>GlobalExceptionHandler routes through <code>IProblemDetailsService.TryWriteAsync</code></strong>, and <code>Program.cs:38-44</code> stamps a fresh GUID <code>traceId</code> on every error — the 5-field ProblemDetails contract is honored.</li>
+      </ul>
+    </section>
+
+    <section class="section" id="followups">
+      <div class="section-head">
+        <div>
+          <h2 class="section-title">Suggested follow-ups</h2>
+          <p class="section-subtitle">Out of scope for this PR but worth queueing.</p>
+        </div>
+      </div>
+
+      <ul class="good-list">
+        <li><strong>NetArchTest for dependency rules.</strong> Add an architecture test that fails the build if Domain ever references Infrastructure or <code>Microsoft.EntityFrameworkCore</code>. Currently enforced by reviewer + grep — the build should enforce it directly.</li>
+        <li><strong>Commitlint in CI.</strong> Catch &gt;72-char subjects at PR-time so the 64-char target sticks. <code>@commitlint/config-conventional</code> handles this in ~10 lines of YAML.</li>
+        <li><strong>Decide on the controller line rule.</strong> Either tighten the two 201 actions or amend the rule in CLAUDE.md. Pick one before the next reviewer files it again.</li>
+      </ul>
+    </section>
+
+    <section class="section" id="refs">
+      <div class="section-head">
+        <div>
+          <h2 class="section-title">Rules and references consulted</h2>
+          <p class="section-subtitle">Audit trail for this review.</p>
+        </div>
+      </div>
+
+      <ul class="refs-list">
+        <li><span class="ref-type">conventions</span><code>.claude/CLAUDE.md</code> — primary source of project conventions (architecture, CQRS-lite, notification pattern, EF mapping, test conventions, "what not to do").</li>
+        <li><span class="ref-type">subagent</span><code>.claude/agents/pr-reviewer.md</code> — read-only reviewer that produced this report.</li>
+        <li><span class="ref-type">playbooks</span><code>.claude/commands/add-endpoint.md</code>, <code>add-use-case.md</code>, <code>add-test.md</code> — used to verify the new code matches the documented patterns.</li>
+      </ul>
+    </section>
+  </main>
+</div>
+
+<div class="toast" id="toast">Copied</div>
+
+<footer class="footer">Generated by pr-reviewer subagent · BlogPlatform.Api · 2026-06-23</footer>
+
+<script>
+const STORAGE_KEY = "pr-review:blogplatform:develop-to-main";
+
+function plainText(el){
+  return el.innerText.replace(/\s+/g,' ').trim();
+}
+
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(showToast._t);
+  showToast._t = setTimeout(() => t.classList.remove('show'), 1600);
+}
+
+function copyComment(btn){
+  const box = btn.closest('.comment-box');
+  const text = plainText(box.querySelector('.comment-text'));
+
+  navigator.clipboard.writeText(text).then(() => {
+    const old = btn.textContent;
+    btn.textContent = 'Copied';
+    btn.classList.add('copied');
+    setTimeout(() => {
+      btn.textContent = old;
+      btn.classList.remove('copied');
+    }, 1400);
+  });
+}
+
+function copyAllComments(){
+  const text = [...document.querySelectorAll('.comment-text')]
+    .map(plainText)
+    .join('\n\n');
+  navigator.clipboard.writeText(text).then(() => showToast('All review comments copied'));
+}
+
+function copyCode(btn){
+  const code = btn.parentElement.querySelector('code');
+  navigator.clipboard.writeText(code.innerText).then(() => {
+    btn.textContent = 'Copied';
+    btn.classList.add('copied');
+    setTimeout(() => {
+      btn.textContent = 'Copy';
+      btn.classList.remove('copied');
+    }, 1400);
+  });
+}
+
+function copyAnchor(btn, id){
+  const url = location.origin + location.pathname + '#' + id;
+  navigator.clipboard.writeText(url).then(() => {
+    btn.classList.add('copied');
+    setTimeout(() => btn.classList.remove('copied'), 1200);
+    showToast('Link copied');
+  });
+}
+
+function toggleAll(open){
+  document.querySelectorAll('.issue-card .issue-body').forEach(el => {
+    el.style.display = open ? 'grid' : 'none';
+  });
+}
+
+// Persistent checkboxes
+function loadChecks(){
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'); }
+  catch { return {}; }
+}
+
+function saveChecks(state){
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+}
+
+function updateProgress(){
+  const items = document.querySelectorAll('.check-item');
+  const done = document.querySelectorAll('.check-item.done').length;
+  const total = items.length;
+  const pct = total ? Math.round((done / total) * 100) : 0;
+  document.getElementById('progress-fill').style.width = pct + '%';
+  document.getElementById('progress-count').textContent = done + ' / ' + total + ' done';
+}
+
+function bindChecks(){
+  const state = loadChecks();
+  document.querySelectorAll('.check-item').forEach(item => {
+    const key = item.dataset.key;
+    if (state[key]) item.classList.add('done');
+    item.addEventListener('click', () => {
+      item.classList.toggle('done');
+      const current = loadChecks();
+      current[key] = item.classList.contains('done');
+      saveChecks(current);
+      updateProgress();
+    });
+  });
+  updateProgress();
+}
+
+function resetChecks(){
+  if (!confirm('Reset all checkboxes?')) return;
+  localStorage.removeItem(STORAGE_KEY);
+  document.querySelectorAll('.check-item.done').forEach(el => el.classList.remove('done'));
+  updateProgress();
+  showToast('Checkboxes reset');
+}
+
+// Active nav highlighting via IntersectionObserver
+function bindNav(){
+  const links = document.querySelectorAll('.nav-list a[data-section]');
+  const map = new Map();
+  links.forEach(a => map.set(a.dataset.section, a));
+
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting){
+        links.forEach(l => l.classList.remove('active'));
+        const link = map.get(entry.target.id);
+        if (link) link.classList.add('active');
+      }
+    });
+  }, { rootMargin: '-40% 0px -50% 0px' });
+
+  ['summary','actions','medium','good','followups','refs'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) observer.observe(el);
+  });
+}
+
+document.addEventListener('keydown', e => {
+  if(['INPUT','TEXTAREA'].includes(document.activeElement.tagName)) return;
+  const k = e.key.toLowerCase();
+  if(k === 'e') toggleAll(true);
+  if(k === 'c') toggleAll(false);
+  if(k === 'p') { e.preventDefault(); window.print(); }
+});
+
+bindChecks();
+bindNav();
+</script>
+</body>
+</html>
