@@ -1,0 +1,77 @@
+{
+  "info": {
+    "name": "BlogPlatform.Api - Endpoints",
+    "description": "One request per endpoint for manual exploration of the BlogPlatform.Api. Use the BlogPlatform Local environment.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "GET /health",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/health",
+              "host": ["{{baseUrl}}"],
+              "path": ["health"]
+            },
+            "description": "Liveness probe. Returns 200 when the API is up."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Posts",
+      "item": [
+        {
+          "name": "GET /api/posts (list)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/posts",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "posts"]
+            },
+            "description": "Returns all blog posts with id, title, createdAt and commentCount."
+          }
+        },
+        {
+          "name": "POST /api/posts (create)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"My first post\",\n  \"content\": \"This is the body of my first post.\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/posts",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "posts"]
+            },
+            "description": "Creates a new blog post. Body requires title (max 200) and content (max 10,000)."
+          }
+        },
+        {
+          "name": "GET /api/posts/{id}",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/posts/{{createdPostId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "posts", "{{createdPostId}}"]
+            },
+            "description": "Retrieves a post with its content and comments. Uses createdPostId from the environment."
+          }
+        }
+      ]
+    }
+  ]
+}

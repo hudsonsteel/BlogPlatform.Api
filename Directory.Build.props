@@ -7,6 +7,11 @@
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <WarningsAsErrors />
     <WarningsNotAsErrors>CS1591</WarningsNotAsErrors>
+    <!-- Suppress code-analysis rules that add ceremony without value at this project scale:
+         CA1716 - VB.NET interop name guard (Error/Result identifiers)
+         CA1848 - LoggerMessage delegates (relevant for high-throughput logging only)
+         CA1859 - prefer ActionResult over IActionResult (micro-optimization) -->
+    <NoWarn>$(NoWarn);CA1716;CA1848;CA1859</NoWarn>
     <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
     <AnalysisLevel>latest-recommended</AnalysisLevel>
     <!-- Audit only direct dependencies. Microsoft.EntityFrameworkCore.Sqlite pulls a
