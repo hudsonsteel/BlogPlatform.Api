@@ -75,7 +75,7 @@ public sealed class PostsController : ApiControllerBase
     /// <response code="500">An unexpected error occurred.</response>
     [HttpPost]
     [ProducesResponseType(typeof(PostDetailDto), StatusCodes.Status201Created)]
-    [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> Create(
         [FromBody] CreatePostRequest request,
@@ -85,5 +85,41 @@ public sealed class PostsController : ApiControllerBase
         var result = await useCase.Handle(request, cancellationToken);
         return HandleResult(result, post =>
             CreatedAtRoute(nameof(GetById), new { id = post.Id }, post));
+    }
+
+    /// <summary>
+    /// Adds a comment to a specific blog post.
+    /// </summary>
+    /// <remarks>
+    /// Validation rules:
+    /// - Author is required and must not exceed 100 characters.
+    /// - Content is required and must not exceed 2,000 characters.
+    ///
+    /// On success the response contains the created comment. The Location header points
+    /// to the parent post (GET /api/posts/{id}) so clients can re-fetch and see the
+    /// full updated comment list.
+    /// </remarks>
+    /// <param name="id">The unique identifier of the post to comment on.</param>
+    /// <param name="request">The comment payload (author and content).</param>
+    /// <param name="useCase">Resolved by the DI container.</param>
+    /// <param name="cancellationToken">Aborts the request if the caller disconnects.</param>
+    /// <response code="201">The comment was created.</response>
+    /// <response code="400">The request payload failed validation.</response>
+    /// <response code="404">No post exists for the supplied id.</response>
+    /// <response code="500">An unexpected error occurred.</response>
+    [HttpPost("{id:guid}/comments")]
+    [ProducesResponseType(typeof(CommentDto), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status500InternalServerError)]
+    public async Task<IActionResult> AddComment(
+        Guid id,
+        [FromBody] AddCommentRequest request,
+        [FromServices] AddCommentToPostUseCase useCase,
+        CancellationToken cancellationToken)
+    {
+        var result = await useCase.Handle(id, request, cancellationToken);
+        return HandleResult(result, comment =>
+            CreatedAtRoute(nameof(GetById), new { id }, comment));
     }
 }

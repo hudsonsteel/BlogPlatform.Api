@@ -30,7 +30,13 @@ builder.Services.AddSwaggerGen(options =>
         options.IncludeXmlComments(xmlPath);
 });
 
-builder.Services.AddProblemDetails();
+builder.Services.AddProblemDetails(options =>
+{
+    options.CustomizeProblemDetails = ctx =>
+    {
+        ctx.ProblemDetails.Extensions["traceId"] = Guid.NewGuid().ToString();
+    };
+});
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 
 builder.Services.AddApplication();

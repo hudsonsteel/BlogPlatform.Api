@@ -14,6 +14,7 @@ public static class DependencyInjection
         services.AddScoped<CreatePostUseCase>();
         services.AddScoped<GetAllPostsUseCase>();
         services.AddScoped<GetPostByIdUseCase>();
+        services.AddScoped<AddCommentToPostUseCase>();
 
         return services;
     }

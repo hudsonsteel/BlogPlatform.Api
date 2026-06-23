@@ -1,10 +1,13 @@
 using BlogPlatform.Domain.Common;
 using Microsoft.AspNetCore.Diagnostics;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
 namespace BlogPlatform.Presentation.Middleware;
 
-internal sealed class GlobalExceptionHandler(ILogger<GlobalExceptionHandler> logger) : IExceptionHandler
+internal sealed class GlobalExceptionHandler(
+    ILogger<GlobalExceptionHandler> logger,
+    IProblemDetailsService problemDetailsService) : IExceptionHandler
 {
     public async ValueTask<bool> TryHandleAsync(
         HttpContext httpContext,
@@ -12,10 +15,11 @@ internal sealed class GlobalExceptionHandler(ILogger<GlobalExceptionHandler> log
         CancellationToken cancellationToken)
     {
         if (exception is DomainValidationException validationException)
-        {
-            await WriteValidationProblemAsync(httpContext, validationException, cancellationToken);
-            return true;
-        }
+            return await WriteAsync(
+                httpContext,
+                StatusCodes.Status400BadRequest,
+                "Validation failed.",
+                string.Join(" ", validationException.Notifications));
 
         logger.LogError(
             exception,
@@ -23,43 +27,30 @@ internal sealed class GlobalExceptionHandler(ILogger<GlobalExceptionHandler> log
             httpContext.Request.Method,
             httpContext.Request.Path);
 
-        await WriteUnexpectedProblemAsync(httpContext, cancellationToken);
-        return true;
+        return await WriteAsync(
+            httpContext,
+            StatusCodes.Status500InternalServerError,
+            "An unexpected error occurred.",
+            detail: null);
     }
 
-    private static async Task WriteValidationProblemAsync(
+    private async Task<bool> WriteAsync(
         HttpContext httpContext,
-        DomainValidationException exception,
-        CancellationToken cancellationToken)
+        int statusCode,
+        string title,
+        string? detail)
     {
-        var problem = new ValidationProblemDetails
+        httpContext.Response.StatusCode = statusCode;
+
+        return await problemDetailsService.TryWriteAsync(new ProblemDetailsContext
         {
-            Status = StatusCodes.Status400BadRequest,
-            Title = "Validation failed.",
-            Detail = string.Join(" ", exception.Notifications),
-            Instance = httpContext.Request.Path,
-        };
-        problem.Extensions["traceId"] = httpContext.TraceIdentifier;
-        problem.Extensions["notifications"] = exception.Notifications;
-
-        httpContext.Response.StatusCode = problem.Status.Value;
-        await httpContext.Response.WriteAsJsonAsync(problem, cancellationToken);
-    }
-
-    private static async Task WriteUnexpectedProblemAsync(
-        HttpContext httpContext,
-        CancellationToken cancellationToken)
-    {
-        var problem = new ProblemDetails
-        {
-            Status = StatusCodes.Status500InternalServerError,
-            Title = "An unexpected error occurred.",
-            Type = "https://tools.ietf.org/html/rfc7231#section-6.6.1",
-            Instance = httpContext.Request.Path,
-        };
-        problem.Extensions["traceId"] = httpContext.TraceIdentifier;
-
-        httpContext.Response.StatusCode = problem.Status.Value;
-        await httpContext.Response.WriteAsJsonAsync(problem, cancellationToken);
+            HttpContext = httpContext,
+            ProblemDetails = new ProblemDetails
+            {
+                Status = statusCode,
+                Title = title,
+                Detail = detail,
+            },
+        });
     }
 }
