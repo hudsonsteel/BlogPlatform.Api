@@ -18,11 +18,17 @@ Infrastructure  ────────┘
 
 | Layer | Responsibility | Depends on |
 |---|---|---|
-| `BlogPlatform.Domain` | Entities, value objects, domain rules. Zero framework dependencies. | nothing |
-| `BlogPlatform.Application` | Use cases, DTOs, validators, interfaces (repositories, UoW). | Domain |
-| `BlogPlatform.Infrastructure` | EF Core DbContext, repository implementations, migrations, DI registration. | Application |
+| `BlogPlatform.Domain` | Entities, value objects, validators, repository interfaces (`IBlogPostRepository`, `IUnitOfWork`). Only depends on FluentValidation. | nothing (except FluentValidation) |
+| `BlogPlatform.Application` | Use cases, DTOs, query interfaces (`IBlogPostQueries` for projections), mappers. | Domain |
+| `BlogPlatform.Infrastructure` | EF Core DbContext, repository + query implementations, migrations, DI registration. | Application + Domain |
 | `BlogPlatform.Presentation` | ASP.NET Core controllers, middleware, Program.cs, Swagger. | Infrastructure + Application |
 | `BlogPlatform.Tests.Unit` | xUnit tests for use cases and domain logic. | Application + Domain |
+
+### Repository vs Queries (CQRS-lite)
+
+- **Write side (Domain)**: `IBlogPostRepository` works with aggregates only. Operations like `AddAsync(BlogPost)`, `GetByIdAsync(Guid)`. No DTOs in the signatures. The interface lives in Domain because the aggregate owns its persistence contract (textbook DDD).
+- **Read side (Application)**: `IBlogPostQueries` returns projected DTOs (`PostListItemDto`) directly from the database. It lives in Application because the shape of the read model is an Application concern (what the use case wants to expose), not a Domain concept.
+- Infrastructure implements both interfaces with separate classes (`BlogPostRepository`, `BlogPostQueries`) so each follows Single Responsibility.
 
 ## Coding conventions
 
@@ -30,8 +36,14 @@ Infrastructure  ────────┘
 - **Nullable reference types**: enabled everywhere.
 - **`TreatWarningsAsErrors`**: enabled (build fails on warnings).
 - **File-scoped namespaces**.
+- **Primary constructors** for dependency injection (use cases, repositories, handlers). No `private readonly` fields plus boilerplate constructor when a primary constructor is enough.
+- **Brace-less single-statement guard clauses**. `if (cond) throw ...;` over a four-line `if (cond) { throw ...; }`. Braces are still required (and enforced by `.editorconfig`) for any multi-line body.
+- **Modern BCL guard helpers** for argument validation: `ArgumentException.ThrowIfNullOrWhiteSpace`, `ArgumentNullException.ThrowIfNull`, `ArgumentOutOfRangeException.ThrowIf*`. Prefer these over hand-written `if`/`throw`.
 - **Async by default** for I/O paths, always passing `CancellationToken`.
-- **Result pattern** for use case return values (no throw for expected failures like validation or not found).
+- **Result pattern** for use-case business outcomes (NotFound, Conflict). **Notification pattern + `ThrowIfInvalid`** for entity-level validation failures (caught by the global middleware and returned as 400 ProblemDetails).
+- **Validators live next to their entity** in the Domain layer. `BlogPostValidator : AbstractValidator<BlogPost>` sits in the same file as `BlogPost.cs`.
+- **One-line validation in use cases**: `await entity.ThrowIfInvalidAsync(validator, ct)`. The extension method (in `Domain/Common/EntityValidationExtensions.cs`) runs the validator, copies the errors into the entity's notifications and throws if invalid. Use cases never validate manually.
+- **Mappers (`*BuilderMap`)** in the Application layer translate DTOs to entities and back. Example: `BlogPostBuilderMap.From(request)` returns a `BlogPost`; `BlogPostBuilderMap.ToDetailDto(post)` returns a `PostDetailDto`. Use cases never `new` an entity directly; they call the mapper.
 - **Thin controllers**: every controller action is 4-7 lines. Inject the use case, call `Handle`, return `HandleResult(result)`. No `if`, no `try`, no validation calls, no business rules. All logic lives in the Application layer.
 - **Guard clauses / Early return**: validate first, return on first failure. No nested `if/else`.
 - **No anemic services**: use cases own a single workflow; entities own invariants.
