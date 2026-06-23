@@ -285,6 +285,27 @@ When working in this codebase via Claude Code, a prompt like *"add an endpoint f
 
 For reviews, prompting *"review this PR"* (or *"check this branch"*) spawns the **`pr-reviewer` subagent**. It reads the diff, the affected files and `CLAUDE.md` in its own isolated context window, then returns a structured `PASS / NEEDS-FIX` report with `file:line` citations of any violations. Keeps the main session's context clean even when the review touches a dozen files.
 
+### Reviewing a PR
+
+Once a feature branch is ready, **start a fresh Claude Code session** in the repo and prompt:
+
+> review this PR
+
+A new session is intentional: the reviewer reads the diff with no leftover assumptions from how the feature was implemented, the same way a human reviewer would. From there Claude:
+
+1. Runs `git diff main...HEAD` and lists the commits in scope.
+2. Spawns the **`pr-reviewer` subagent**, which reads `CLAUDE.md` and every changed file in its own isolated context window and audits them against the documented conventions.
+3. Writes the findings to **`.claude/reports/pr-review.html`** — a single-file, zero-dependency report with the verdict (`PASS` / `NEEDS-FIX`), severity-scored issue cards (problem, suggested fix, why it matters, code sample, ready-to-paste PR comment), the good practices observed, and suggested follow-ups.
+4. Opens the report in your default browser.
+
+The action checklist persists in `localStorage`, so you can close the tab, fix items between sessions, and come back to your tracked progress. Keyboard shortcuts: `E` expand all, `C` collapse all, `P` print or save to PDF.
+
+<!-- screenshot: hero with verdict pill, action board, and progress bar -->
+![PR review report — action board](./docs/images/pr-review-action-board.png)
+
+<!-- screenshot: medium priority issue card with code sample and copyable PR comment -->
+![PR review report — medium issue](./docs/images/pr-review-medium-issue.png)
+
 ### Possible extensions
 
 These would slot naturally into the same `.claude/` workspace:
