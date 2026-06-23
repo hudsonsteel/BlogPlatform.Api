@@ -70,6 +70,25 @@
             },
             "description": "Retrieves a post with its content and comments. Uses createdPostId from the environment."
           }
+        },
+        {
+          "name": "POST /api/posts/{id}/comments",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"author\": \"Alice\",\n  \"content\": \"Great post!\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/posts/{{createdPostId}}/comments",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "posts", "{{createdPostId}}", "comments"]
+            },
+            "description": "Adds a comment to a post. Body requires author (max 100) and content (max 2,000)."
+          }
         }
       ]
     }

@@ -4,7 +4,7 @@ public abstract class Entity
 {
     private readonly List<string> _notifications = [];
 
-    public Guid Id { get; protected set; } = Guid.NewGuid();
+    public Guid Id { get; protected set; }
 
     public DateTime CreatedAt { get; protected set; } = DateTime.UtcNow;
 

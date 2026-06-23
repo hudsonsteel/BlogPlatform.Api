@@ -12,10 +12,6 @@ internal sealed class BlogPostRepository(BlogPlatformDbContext context) : IBlogP
 
     public Task<BlogPost?> GetByIdAsync(Guid id, CancellationToken cancellationToken) =>
         context.BlogPosts
-            .FirstOrDefaultAsync(p => p.Id == id, cancellationToken);
-
-    public Task<BlogPost?> GetByIdWithCommentsAsync(Guid id, CancellationToken cancellationToken) =>
-        context.BlogPosts
             .Include(p => p.Comments)
             .AsSplitQuery()
             .FirstOrDefaultAsync(p => p.Id == id, cancellationToken);

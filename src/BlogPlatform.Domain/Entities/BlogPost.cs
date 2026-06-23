@@ -23,17 +23,12 @@ public sealed class BlogPost : Entity
 
     public IReadOnlyCollection<Comment> Comments => _comments.AsReadOnly();
 
-    public Comment AddComment(string author, string content)
-    {
-        var comment = new Comment(Id, author, content);
-        _comments.Add(comment);
-        return comment;
-    }
+    public void AddComment(Comment comment) => _comments.Add(comment);
 }
 
 public sealed class BlogPostValidator : AbstractValidator<BlogPost>
 {
-    public const int MaxTitleLength = 200;
+    public const int MaxTitleLength = 200;  
     public const int MaxContentLength = 10_000;
 
     public BlogPostValidator()
