@@ -301,10 +301,10 @@ A new session is intentional: the reviewer reads the diff with no leftover assum
 The action checklist persists in `localStorage`, so you can close the tab, fix items between sessions, and come back to your tracked progress. Keyboard shortcuts: `E` expand all, `C` collapse all, `P` print or save to PDF.
 
 <!-- screenshot: hero with verdict pill, action board, and progress bar -->
-![PR review report — action board](./docs/images/pr-review-action-board.png)
+<img width="961" height="601" alt="image" src="https://github.com/user-attachments/assets/237b3d65-3701-43a2-9f92-fb24ac1039f9" />
 
 <!-- screenshot: medium priority issue card with code sample and copyable PR comment -->
-![PR review report — medium issue](./docs/images/pr-review-medium-issue.png)
+<img width="935" height="916" alt="image" src="https://github.com/user-attachments/assets/d9a27aee-c71f-452f-9e1a-d419cfe5de62" />
 
 ### Possible extensions
 
