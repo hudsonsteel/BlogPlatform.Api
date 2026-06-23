@@ -130,6 +130,8 @@ The `/postman/` folder contains three files:
 Expected: **33 / 33 assertions pass** against a running API.
 
 <img width="1913" height="932" alt="image" src="https://github.com/user-attachments/assets/6aba2639-6a0f-4ad1-ae4c-dae747f936ce" />
+<img width="572" height="110" alt="image" src="https://github.com/user-attachments/assets/1078b06c-8c46-4a84-b585-dbfad00ba71c" />
+
 
 ## Endpoint reference
 
