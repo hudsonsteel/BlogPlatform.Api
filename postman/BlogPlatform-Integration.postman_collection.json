@@ -1,0 +1,509 @@
+{
+  "info": {
+    "name": "BlogPlatform.Api - Integration",
+    "description": "Sequenced integration tests for the BlogPlatform.Api. Run via the Postman Runner with the BlogPlatform Local environment selected. Covers happy path, validation failures and not-found scenarios for posts and comments.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "01 - Health check",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+              "pm.test('Returns healthy status', () => {",
+              "  const body = pm.response.json();",
+              "  pm.expect(body.status).to.eql('healthy');",
+              "  pm.expect(body.service).to.eql('BlogPlatform.Api');",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/health",
+          "host": ["{{baseUrl}}"],
+          "path": ["health"]
+        }
+      }
+    },
+    {
+      "name": "02 - List posts (empty or seeded)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+              "pm.test('Returns an array', () => {",
+              "  const body = pm.response.json();",
+              "  pm.expect(body).to.be.an('array');",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/posts",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "posts"]
+        }
+      }
+    },
+    {
+      "name": "03 - Create post (happy path)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 201', () => pm.response.to.have.status(201));",
+              "pm.test('Location header is set', () => {",
+              "  pm.expect(pm.response.headers.has('Location')).to.be.true;",
+              "});",
+              "pm.test('Response body has the expected shape', () => {",
+              "  const body = pm.response.json();",
+              "  pm.expect(body.id).to.be.a('string');",
+              "  pm.expect(body.title).to.eql('Integration test post');",
+              "  pm.expect(body.content).to.eql('This post was created by the Postman integration suite.');",
+              "  pm.expect(body.comments).to.be.an('array').that.is.empty;",
+              "});",
+              "pm.test('createdPostId saved to environment', () => {",
+              "  const body = pm.response.json();",
+              "  pm.environment.set('createdPostId', body.id);",
+              "  pm.expect(pm.environment.get('createdPostId')).to.eql(body.id);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"title\": \"Integration test post\",\n  \"content\": \"This post was created by the Postman integration suite.\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/posts",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "posts"]
+        }
+      }
+    },
+    {
+      "name": "04 - Retrieve created post by id",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+              "pm.test('Returns the post created in step 03', () => {",
+              "  const body = pm.response.json();",
+              "  pm.expect(body.id).to.eql(pm.environment.get('createdPostId'));",
+              "  pm.expect(body.title).to.eql('Integration test post');",
+              "  pm.expect(body.content).to.be.a('string');",
+              "  pm.expect(body.comments).to.be.an('array').that.is.empty;",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/posts/{{createdPostId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "posts", "{{createdPostId}}"]
+        }
+      }
+    },
+    {
+      "name": "05 - List includes the created post",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+              "pm.test('Created post is in the list', () => {",
+              "  const body = pm.response.json();",
+              "  const id = pm.environment.get('createdPostId');",
+              "  const found = body.find(p => p.id === id);",
+              "  pm.expect(found, 'created post in list').to.not.be.undefined;",
+              "  pm.expect(found.title).to.eql('Integration test post');",
+              "  pm.expect(found.commentCount).to.eql(0);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/posts",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "posts"]
+        }
+      }
+    },
+    {
+      "name": "06 - Add comment to created post (happy path)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 201', () => pm.response.to.have.status(201));",
+              "pm.test('Location header is set', () => {",
+              "  pm.expect(pm.response.headers.has('Location')).to.be.true;",
+              "});",
+              "pm.test('Response body has the expected shape', () => {",
+              "  const body = pm.response.json();",
+              "  pm.expect(body.id).to.be.a('string');",
+              "  pm.expect(body.author).to.eql('Alice');",
+              "  pm.expect(body.content).to.eql('Great post! Looking forward to more.');",
+              "  pm.expect(body.createdAt).to.be.a('string');",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"author\": \"Alice\",\n  \"content\": \"Great post! Looking forward to more.\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/posts/{{createdPostId}}/comments",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "posts", "{{createdPostId}}", "comments"]
+        }
+      }
+    },
+    {
+      "name": "07 - GET post by id includes the new comment",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+              "pm.test('Post now has the comment', () => {",
+              "  const body = pm.response.json();",
+              "  pm.expect(body.comments).to.be.an('array').that.has.lengthOf(1);",
+              "  pm.expect(body.comments[0].author).to.eql('Alice');",
+              "  pm.expect(body.comments[0].content).to.eql('Great post! Looking forward to more.');",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/posts/{{createdPostId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "posts", "{{createdPostId}}"]
+        }
+      }
+    },
+    {
+      "name": "08 - List reflects the comment count",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+              "pm.test('Created post now reports commentCount = 1', () => {",
+              "  const body = pm.response.json();",
+              "  const id = pm.environment.get('createdPostId');",
+              "  const found = body.find(p => p.id === id);",
+              "  pm.expect(found, 'created post in list').to.not.be.undefined;",
+              "  pm.expect(found.commentCount).to.eql(1);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/posts",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "posts"]
+        }
+      }
+    },
+    {
+      "name": "09 - Add comment fails when author is empty",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 400', () => pm.response.to.have.status(400));",
+              "pm.test('Returns ValidationProblemDetails with author error', () => {",
+              "  const body = pm.response.json();",
+              "  pm.expect(body.status).to.eql(400);",
+              "  pm.expect(body.detail.toLowerCase()).to.include('author is required');",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"author\": \"\",\n  \"content\": \"Some content.\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/posts/{{createdPostId}}/comments",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "posts", "{{createdPostId}}", "comments"]
+        }
+      }
+    },
+    {
+      "name": "10 - Add comment fails when content is empty",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 400', () => pm.response.to.have.status(400));",
+              "pm.test('Returns ValidationProblemDetails with content error', () => {",
+              "  const body = pm.response.json();",
+              "  pm.expect(body.status).to.eql(400);",
+              "  pm.expect(body.detail.toLowerCase()).to.include('content is required');",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"author\": \"Bob\",\n  \"content\": \"\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/posts/{{createdPostId}}/comments",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "posts", "{{createdPostId}}", "comments"]
+        }
+      }
+    },
+    {
+      "name": "11 - Add comment to unknown post returns 404",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 404', () => pm.response.to.have.status(404));",
+              "pm.test('Returns ProblemDetails with NotFound title', () => {",
+              "  const body = pm.response.json();",
+              "  pm.expect(body.status).to.eql(404);",
+              "  pm.expect(body.title).to.eql('NotFound');",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"author\": \"Charlie\",\n  \"content\": \"Hello\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/posts/00000000-0000-0000-0000-000000000000/comments",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "posts", "00000000-0000-0000-0000-000000000000", "comments"]
+        }
+      }
+    },
+    {
+      "name": "12 - Create post fails when title is empty",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 400', () => pm.response.to.have.status(400));",
+              "pm.test('Returns ValidationProblemDetails with title error', () => {",
+              "  const body = pm.response.json();",
+              "  pm.expect(body.status).to.eql(400);",
+              "  pm.expect(body.title).to.eql('Validation failed.');",
+              "  pm.expect(body.detail.toLowerCase()).to.include('title is required');",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"title\": \"\",\n  \"content\": \"Some content.\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/posts",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "posts"]
+        }
+      }
+    },
+    {
+      "name": "13 - Create post fails when content is empty",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 400', () => pm.response.to.have.status(400));",
+              "pm.test('Returns ValidationProblemDetails with content error', () => {",
+              "  const body = pm.response.json();",
+              "  pm.expect(body.status).to.eql(400);",
+              "  pm.expect(body.detail.toLowerCase()).to.include('content is required');",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"title\": \"A valid title\",\n  \"content\": \"\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/posts",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "posts"]
+        }
+      }
+    },
+    {
+      "name": "14 - Create post fails when title exceeds 200 characters",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.variables.set('longTitle', 'a'.repeat(201));"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 400', () => pm.response.to.have.status(400));",
+              "pm.test('Returns ValidationProblemDetails with length error', () => {",
+              "  const body = pm.response.json();",
+              "  pm.expect(body.status).to.eql(400);",
+              "  pm.expect(body.detail.toLowerCase()).to.include('title cannot exceed');",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"title\": \"{{longTitle}}\",\n  \"content\": \"Some content.\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/posts",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "posts"]
+        }
+      }
+    },
+    {
+      "name": "15 - GET by id returns 404 for unknown post",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 404', () => pm.response.to.have.status(404));",
+              "pm.test('Returns ProblemDetails with NotFound title', () => {",
+              "  const body = pm.response.json();",
+              "  pm.expect(body.status).to.eql(404);",
+              "  pm.expect(body.title).to.eql('NotFound');",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/posts/00000000-0000-0000-0000-000000000000",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "posts", "00000000-0000-0000-0000-000000000000"]
+        }
+      }
+    }
+  ]
+}
