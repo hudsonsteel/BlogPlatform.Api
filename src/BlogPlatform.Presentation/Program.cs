@@ -5,8 +5,13 @@ using BlogPlatform.Infrastructure.Persistence;
 using BlogPlatform.Presentation.Middleware;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi;
+using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Host.UseSerilog((context, services, configuration) => configuration
+    .ReadFrom.Configuration(context.Configuration)
+    .ReadFrom.Services(services));
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
@@ -50,6 +55,7 @@ await using (var scope = app.Services.CreateAsyncScope())
     await dbContext.Database.MigrateAsync();
 }
 
+app.UseSerilogRequestLogging();
 app.UseExceptionHandler();
 
 if (app.Environment.IsDevelopment())

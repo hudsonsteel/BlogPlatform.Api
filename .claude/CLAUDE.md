@@ -2,9 +2,9 @@
 
 ## What this is
 
-A RESTful API for a simple blogging platform. Built as a backend coding challenge.
+A RESTful API for a simple blogging platform. Built as a backend coding challenge submission for Prosigliere.
 
-The codebase is intentionally small but production-leaning: Clean Architecture, Result pattern, FluentValidation, EF Core + SQLite, xUnit tests with Given-When-Then structure, Swagger, Docker, and a GitHub Actions CI pipeline.
+The codebase is intentionally small but production-leaning: Clean Architecture with a CQRS-lite split, the notification pattern for entity validation, mappers for DTO translation, thin controllers, FluentValidation, EF Core + SQLite, xUnit tests with Given-When-Then, Swagger (with XML docs), Serilog (console + rolling file), Docker, and a GitHub Actions CI pipeline.
 
 ## Architecture
 
@@ -18,62 +18,71 @@ Infrastructure  ────────┘
 
 | Layer | Responsibility | Depends on |
 |---|---|---|
-| `BlogPlatform.Domain` | Entities, value objects, validators, repository interfaces (`IBlogPostRepository`, `IUnitOfWork`). Only depends on FluentValidation. | nothing (except FluentValidation) |
-| `BlogPlatform.Application` | Use cases, DTOs, query interfaces (`IBlogPostQueries` for projections), mappers. | Domain |
-| `BlogPlatform.Infrastructure` | EF Core DbContext, repository + query implementations, migrations, DI registration. | Application + Domain |
-| `BlogPlatform.Presentation` | ASP.NET Core controllers, middleware, Program.cs, Swagger. | Infrastructure + Application |
-| `BlogPlatform.Tests.Unit` | xUnit tests for use cases and domain logic. | Application + Domain |
+| `BlogPlatform.Domain` | Entities (`BlogPost`, `Comment`), `Entity` base, value objects, validators (FluentValidation), repository interfaces (`IBlogPostRepository`, `IUnitOfWork`), `DomainValidationException`, `EntityValidationExtensions`. | FluentValidation only |
+| `BlogPlatform.Application` | Use cases, DTOs, mappers (`*BuilderMap`), query interfaces (`IBlogPostQueries` for read-side DTO projections), `Result<T>`/`Error`. | Domain |
+| `BlogPlatform.Infrastructure` | EF Core `DbContext`, `EntityConfiguration<T>` base + per-entity configs, repository implementations, query implementations, migrations, DI registration. | Application + Domain |
+| `BlogPlatform.Presentation` | ASP.NET Core controllers (thin), `ApiControllerBase` (`HandleResult` helper), `GlobalExceptionHandler` (`IExceptionHandler`), `Program.cs`, Swagger, Serilog wiring. | Infrastructure + Application |
+| `BlogPlatform.Tests.Unit` | xUnit tests for use cases, mappers, validators and entity behavior. | Application + Domain |
 
 ### Repository vs Queries (CQRS-lite)
 
-- **Write side (Domain)**: `IBlogPostRepository` works with aggregates only. Operations like `AddAsync(BlogPost)`, `GetByIdAsync(Guid)`. No DTOs in the signatures. The interface lives in Domain because the aggregate owns its persistence contract (textbook DDD).
-- **Read side (Application)**: `IBlogPostQueries` returns projected DTOs (`PostListItemDto`) directly from the database. It lives in Application because the shape of the read model is an Application concern (what the use case wants to expose), not a Domain concept.
-- Infrastructure implements both interfaces with separate classes (`BlogPostRepository`, `BlogPostQueries`) so each follows Single Responsibility.
+- **Write side (Domain)**: `IBlogPostRepository` works with aggregates. `GetByIdAsync` always loads the **full aggregate** (post + comments). No `WithCommentsAsync` variant — aggregates are atomic. `AddAsync(BlogPost)` is the only mutation method; child operations go through the aggregate root.
+- **Read side (Application)**: `IBlogPostQueries` returns projected DTOs (`PostListItemDto`) directly from the database. The shape of read models is an Application concern, not a Domain concept.
+- Infrastructure implements both interfaces with separate classes (`BlogPostRepository`, `BlogPostQueries`).
 
 ## Coding conventions
 
 - **C# 14 / .NET 10**
 - **Nullable reference types**: enabled everywhere.
-- **`TreatWarningsAsErrors`**: enabled (build fails on warnings).
+- **`TreatWarningsAsErrors`**: enabled (build fails on warnings). Specific suppressions (CA1716, CA1848, CA1859) documented inline in `Directory.Build.props`.
 - **File-scoped namespaces**.
 - **Primary constructors** for dependency injection (use cases, repositories, handlers). No `private readonly` fields plus boilerplate constructor when a primary constructor is enough.
-- **Brace-less single-statement guard clauses**. `if (cond) throw ...;` over a four-line `if (cond) { throw ...; }`. Braces are still required (and enforced by `.editorconfig`) for any multi-line body.
-- **Modern BCL guard helpers** for argument validation: `ArgumentException.ThrowIfNullOrWhiteSpace`, `ArgumentNullException.ThrowIfNull`, `ArgumentOutOfRangeException.ThrowIf*`. Prefer these over hand-written `if`/`throw`.
+- **Brace-less single-statement guard clauses**. `if (cond) throw ...;` over a four-line `if (cond) { throw ...; }`. `.editorconfig` enforces `csharp_prefer_braces = when_multiline`.
+- **Modern BCL guard helpers** for argument validation when applicable (`ArgumentException.ThrowIfNullOrWhiteSpace`, `ArgumentNullException.ThrowIfNull`). Prefer these over hand-written `if`/`throw`.
 - **Async by default** for I/O paths, always passing `CancellationToken`.
-- **Result pattern** for use-case business outcomes (NotFound, Conflict). **Notification pattern + `ThrowIfInvalid`** for entity-level validation failures (caught by the global middleware and returned as 400 ProblemDetails).
-- **Validators live next to their entity** in the Domain layer. `BlogPostValidator : AbstractValidator<BlogPost>` sits in the same file as `BlogPost.cs`.
-- **One-line validation in use cases**: `await entity.ThrowIfInvalidAsync(validator, ct)`. The extension method (in `Domain/Common/EntityValidationExtensions.cs`) runs the validator, copies the errors into the entity's notifications and throws if invalid. Use cases never validate manually.
-- **Mappers (`*BuilderMap`)** in the Application layer translate DTOs to entities and back. Example: `BlogPostBuilderMap.From(request)` returns a `BlogPost`; `BlogPostBuilderMap.ToDetailDto(post)` returns a `PostDetailDto`. Use cases never `new` an entity directly; they call the mapper.
+- **Result pattern** for use-case business outcomes (`NotFound`, `Conflict`). **Notification pattern + `ThrowIfInvalid`** for entity-level validation failures, caught by the global middleware and returned as 400 ProblemDetails.
 - **Thin controllers**: every controller action is 4-7 lines. Inject the use case, call `Handle`, return `HandleResult(result)`. No `if`, no `try`, no validation calls, no business rules. All logic lives in the Application layer.
-- **Guard clauses / Early return**: validate first, return on first failure. No nested `if/else`.
-- **No anemic services**: use cases own a single workflow; entities own invariants.
+- **Validators live next to their entity** in the Domain layer. `BlogPostValidator : AbstractValidator<BlogPost>` is in the same file as `BlogPost.cs`. Same for Comment.
+- **One-line validation in use cases**: `await entity.ThrowIfInvalidAsync(validator, ct)`. The extension method (in `Domain/Common/EntityValidationExtensions.cs`) runs the validator, copies the errors into the entity's notifications and throws if invalid.
+- **Mappers (`*BuilderMap`)** in the Application layer translate DTOs to entities and back. Example: `BlogPostBuilderMap.From(request)` returns a `BlogPost`; `BlogPostBuilderMap.ToDetailDto(post)` returns a `PostDetailDto`. Use cases never `new` an entity directly; they call the mapper.
+- **Entity Id is generated by EF Core**, not by the constructor. The `Entity` base class declares `Id` without a default value. Per-entity configurations apply `ValueGeneratedOnAdd()` so the GuidValueGenerator runs at insert time. This makes the notification + aggregate-navigation pattern work correctly with EF Core's change tracker (new entities have `Id = Guid.Empty`, which the tracker treats as Added).
+- **DRY EF mapping** via `EntityConfiguration<TEntity>` base class (Infrastructure). It owns the shared bits: primary key, value-generated Id, required `CreatedAt`, `Ignore()` for `Notifications` and `IsValid`. Per-entity configs only declare their own table name, properties and relationships.
 - **No magic strings for routes**: define them as `const string` on the controller when reused.
-- **DRY**: extract shared logic to base classes (`ApiControllerBase`, `Entity`) or shared MSBuild props. Never copy code between use cases — extract a helper or interface.
-- **Global exception middleware** handles unexpected exceptions (5xx). Use cases never `throw` for expected outcomes — they return `Result.Failure(...)`.
+- **DRY**: extract shared logic to base classes (`ApiControllerBase`, `Entity`, `EntityConfiguration<T>`) or shared MSBuild props. Never copy code between use cases — extract a helper or interface.
+- **Global exception middleware** handles unexpected exceptions (5xx) and `DomainValidationException` (400). Both write through `IProblemDetailsService.TryWriteAsync` so the framework's `CustomizeProblemDetails` callback stamps a fresh GUID `traceId` on every error response. The body is a clean 5-field ProblemDetails: `type`, `title`, `status`, `detail`, `traceId`.
 
 ## Test conventions
 
 - Framework: **xUnit + FluentAssertions + Moq**.
 - Structuring pattern: **Given-When-Then (GWT)**, written as comments inside the test body.
-- Test method naming: `MethodUnderTest_StateUnderTest_ExpectedBehavior`.
-- One assertion concept per test (multiple `Should()` calls for the same concept are fine).
+- Test file path mirrors the source file path under `tests/BlogPlatform.Tests.Unit/`.
+- Test class naming: `<ClassUnderTest>Tests`.
+- Test method naming: `Method_State_ExpectedBehavior`. The test project locally suppresses CA1707 (underscores) to allow this convention.
+- One assertion concept per test.
+- Use `[Fact]` for single scenarios and `[Theory]` + `[InlineData]` for parameterized.
+- Mock only interfaces from `Domain/Repositories/`, `Application/Common/Queries/`, and `FluentValidation.IValidator<T>`. Never mock entities — construct them directly.
+- Use `TestSupport/TestEntityExtensions.WithId(Guid)` / `.WithCreatedAt(DateTime)` when a test needs specific values for the protected `Entity` setters.
 
 Example:
 
 ```csharp
 [Fact]
-public async Task Handle_WhenTitleIsEmpty_ReturnsValidationFailure()
+public async Task Handle_WhenPostDoesNotExist_ReturnsNotFoundAndDoesNotSave()
 {
     // Given
-    var useCase = new CreatePostUseCase(_repository.Object, _unitOfWork.Object);
-    var request = new CreatePostRequest(Title: "", Content: "valid content");
+    var postId = Guid.NewGuid();
+    _repository
+        .Setup(r => r.GetByIdAsync(postId, It.IsAny<CancellationToken>()))
+        .ReturnsAsync((BlogPost?)null);
+    var useCase = new AddCommentToPostUseCase(_repository.Object, _unitOfWork.Object, _validator.Object);
 
     // When
-    var result = await useCase.Handle(request, CancellationToken.None);
+    var result = await useCase.Handle(postId, new AddCommentRequest("Alice", "Great!"), CancellationToken.None);
 
     // Then
-    result.IsSuccess.Should().BeFalse();
-    result.Error.Should().Contain("Title");
+    result.IsFailure.Should().BeTrue();
+    result.Error.Type.Should().Be(ErrorType.NotFound);
+    _unitOfWork.Verify(u => u.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
 }
 ```
 
@@ -85,6 +94,12 @@ public async Task Handle_WhenTitleIsEmpty_ReturnsValidationFailure()
 | Add a new use case only (no new endpoint) | `.claude/commands/add-use-case.md` |
 | Add a unit test for an existing use case | `.claude/commands/add-test.md` |
 
+## Available subagents
+
+| Agent | When to spawn |
+|---|---|
+| `pr-reviewer` (`.claude/agents/pr-reviewer.md`) | Before opening a PR to `develop` or `main`, or whenever a "review this PR/branch" request comes in. Reads the diff and affected files in its own context window and returns a `PASS / NEEDS-FIX` report with `file:line` citations against the conventions in this document. Read-only. |
+
 ## Build & run commands
 
 ```bash
@@ -95,17 +110,22 @@ dotnet build
 # Run tests
 dotnet test
 
-# Run the API locally
+# Run the API locally (HTTP profile, Swagger auto-opens at /swagger)
 dotnet run --project src/BlogPlatform.Presentation
-# Swagger: http://localhost:5xxx/swagger
 
-# Apply EF Core migrations (runs automatically at startup in Development)
+# Run in Docker
+docker compose up --build
+
+# Apply EF Core migrations manually (runs automatically at startup)
 dotnet ef database update --project src/BlogPlatform.Infrastructure --startup-project src/BlogPlatform.Presentation
+
+# Add a new EF Core migration
+dotnet ef migrations add <Name> --project src/BlogPlatform.Infrastructure --startup-project src/BlogPlatform.Presentation --output-dir Persistence/Migrations
 ```
 
 ## Git workflow
 
-- `main`: protected, production-clean. Only updated via PR from `develop`.
+- `main`: protected, production-clean. Only updated via PR from `develop`. GitHub ruleset enforces no direct pushes, no force pushes, no deletions.
 - `develop`: integration branch. Feature branches PR here.
 - `feature/*`: per logical chunk of work.
 - **Conventional Commits** for all commit messages (`feat:`, `fix:`, `test:`, `docs:`, `chore:`, `build:`, `refactor:`).
@@ -113,7 +133,10 @@ dotnet ef database update --project src/BlogPlatform.Infrastructure --startup-pr
 ## What NOT to do
 
 - Don't add abstractions until two concrete callers exist.
-- Don't catch exceptions to convert to Result inside use cases — let middleware handle truly unexpected ones.
-- Don't add authentication for this challenge (out of scope, listed under "Next Steps" in README).
-- Don't introduce a second persistence provider for now — SQLite is enough.
-- Don't write tests against the controller layer (covered by integration tests, also listed as next step). Unit tests focus on use cases and domain.
+- Don't catch exceptions to convert them to `Result` inside use cases. Validation outcomes flow through `ThrowIfInvalidAsync` -> `DomainValidationException` -> middleware. Truly unexpected exceptions are caught by `GlobalExceptionHandler` and become 500.
+- Don't add authentication for this challenge (out of scope, listed under "Next Steps" in the README).
+- Don't introduce a second persistence provider — SQLite is enough for the challenge.
+- Don't write tests against the controller layer (integration tests are listed as a Next Step; the unit tests cover use cases and domain logic).
+- Don't `new` an entity directly inside a use case — go through the mapper.
+- Don't add a second `WithX` variant of a repository GetByIdAsync. Aggregate roots load atomically.
+- Don't set `Entity.Id` in your code; let EF Core's `GuidValueGenerator` do it.
